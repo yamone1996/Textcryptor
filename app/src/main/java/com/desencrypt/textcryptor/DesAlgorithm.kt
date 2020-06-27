@@ -172,24 +172,46 @@ object DES {
     private fun getSubKeys(key: String): Array<BitSet> {
         val k = key.toLittleEndianBitSet()
 
+        //Print
+        k.print("K")
+        System.out.println(" ")
+
+
         // permute 'key' using table PC1
         val kp = BitSet(56)
         for (i in 0..55) kp[i] = k[PC1[i] - 1]
 
+        //Print
+        kp.print("K+")
+        System.out.println()
+
         // split 'kp' in half and process the resulting series of 'c' and 'd'
-        val c = Array(17) { BitSet(56) }
+        val c = Array(17) { BitSet(28) }
         val d = Array(17) { BitSet(28) }
         for (i in 0..27) c[0][i] = kp[i]
         for (i in 0..27) d[0][i] = kp[i + 28]
+        //Print
+        c[0].print("c0")
+        d[0].print("d0")
+        System.out.println(" ")
+
         for (i in 1..16) {
             c[i - 1].shiftLeft(SHIFTS[i - 1], 28, c[i])
             d[i - 1].shiftLeft(SHIFTS[i - 1], 28, d[i])
+            //Print
+            c[i].print("c$i")
+            d[i].print("d$i")
+            System.out.println(" ")
         }
 
         // merge 'd' into 'c'
         for (i in 1..16) {
-            for (j in 28..55) c[i][j] = d[i][j - 28]
+            for (j in 28..55) {
+                c[i][j] = d[i][j - 28]
+            }
+
         }
+
 
         // form the sub-keys and store them in 'ks'
         val ks = Array(17) { BitSet(48) }
@@ -197,30 +219,48 @@ object DES {
         // permute 'c' using table PC2
         for (i in 1..16) {
             for (j in 0..47) ks[i][j] = c[i][PC2[j] - 1]
+            ks[i].print("K$i")
         }
-
         return ks
     }
 
     private fun processMessage(message: String, ks: Array<BitSet>): String {
         val m = message.toLittleEndianBitSet()
+        //Print
+        System.out.println(" ")
+        m.print("M")
 
         // permute 'message' using table IP
         val mp = BitSet(64)
         for (i in 0..63) {
             mp[i] = m[IP[i] - 1]
         }
+        //Print
+        mp.print("IP")
+        System.out.println(" ")
 
         // split 'mp' in half and process the resulting series of 'l' and 'r
         val l = Array(17) { BitSet(32) }
         val r = Array(17) { BitSet(32) }
         for (i in 0..31) l[0][i] = mp[i]
         for (i in 0..31) r[0][i] = mp[i + 32]
+
+        //Print
+        l[0].print("L0")
+        r[0].print("R0")
+        System.out.println(" ")
+
         for (i in 1..16) {
             l[i] = r[i - 1]
             val fs = f(r[i - 1], ks[i])
             l[i - 1].xor(fs)
             r[i] = l[i - 1]
+
+            //Print
+            fs.print("f(R${i - 1}, K$i)")
+            l[i].print("L$i")
+            r[i].print("R$i")
+            System.out.println(" ")
         }
 
         // amalgamate r[16] and l[16] (in that order) into 'e'
@@ -297,4 +337,16 @@ object DES {
         for (i in 0..31) sp[i] = sr[P[i] - 1]
         return sp
     }
+
+
+    fun BitSet.print(name: String) {
+        var Bit = ""
+        for (i in 0 until this.length())
+            Bit += this[i].toInt()
+        System.out.println("$name = $Bit")
+    }
+
+
+    fun Boolean.toInt() = if (this) 1 else 0
 }
+
